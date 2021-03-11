@@ -87,11 +87,11 @@ class RMT {
       // 暂时关闭摄像头采集
       await this.client.setEnabled(false);
     }
-    console.log(this.client.localAudioTrack, this.client.localVideoTrack);
+    console.log(this.localAudioTrack, this.localVideoTrack);
     // 将这些音视频轨道对象发布到频道中。
     await this.client.publish([
-      this.client.localAudioTrack,
-      this.client.localVideoTrack
+      this.localAudioTrack,
+      this.localVideoTrack
     ]);
   }
 
