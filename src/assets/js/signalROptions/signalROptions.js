@@ -87,13 +87,47 @@ class RMT {
       // 暂时关闭摄像头采集
       await this.client.setEnabled(false);
     }
+    console.log(this.client.localAudioTrack, this.client.localVideoTrack);
     // 将这些音视频轨道对象发布到频道中。
     await this.client.publish([
       this.client.localAudioTrack,
       this.client.localVideoTrack
     ]);
+  }
+
+  /**
+   * 将客户端事件的回调添加到控制流
+   * @param {*} client
+   * @param {*} streamList
+   */
+  subscribeStreamEvents() {
+    this.client.on("stream-added", function(evt) {
+      let stream = evt.stream;
+      let id = stream.getId();
+      console.log(stream, id, evt);
+    });
+
+    // 当同伴离开时
+    this.client.on("peer-leave", function(evt) {
+      let id = evt.uid;
+      console.log(id, evt);
+    });
+
+    // 订阅流时
+    this.client.on("stream-subscribed", function(evt) {
+      let stream = evt.stream;
+      console.log(stream, evt);
+    });
+
+    // 删除流时
+    this.client.on("stream-removed", function(evt) {
+      let stream = evt.stream;
+      let id = stream.getId();
+      console.log(id, evt);
+    });
+
+    // 开始订阅远端用户。
     this.client.on("user-published", async (user, mediaType) => {
-      // 开始订阅远端用户。
       await this.client.subscribe(user, mediaType);
       console.log("subscribe success");
       // 表示本次订阅的是视频。
@@ -110,7 +144,8 @@ class RMT {
         playerContainer.style.left = "50%";
         playerContainer.style.top = "50%";
         playerContainer.style.transform = "translate(-50%, -50%)";
-        document.getElementById("homeBox").appendChild(playerContainer);
+        console.log(playerContainer);
+        document.getElementById("homeBox").append(playerContainer);
         // document.body.append(playerContainer);
         // 订阅完成，播放远端音视频。
         // 传入 DIV 节点，让 SDK 在这个节点下创建相应的播放器播放远端视频。
@@ -139,8 +174,8 @@ class RMT {
   // 离开频道
   async leaveCall() {
     // 销毁本地音视频轨道。
-    this.client.localAudioTrack.close();
-    this.client.localVideoTrack.close();
+    this.localAudioTrack.close();
+    this.localVideoTrack.close();
     // 遍历远端用户。
     this.client.remoteUsers.forEach(user => {
       // 销毁动态创建的 DIV 节点。
