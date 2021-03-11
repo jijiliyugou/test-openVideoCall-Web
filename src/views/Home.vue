@@ -1,5 +1,7 @@
 <template>
-  <div class="home" id="homeBox"></div>
+  <div class="home" id="homeBox">
+    <li class="item myItem"></li>
+  </div>
 </template>
 
 <script>
@@ -24,7 +26,14 @@ export default {
 .home {
   width: 100%;
   height: 100%;
-  background: url("../assets/images/ag-index-background.png") center no-repeat;
+  background: url("~@/assets/images/ag-index-background.png") center no-repeat;
   background-size: 100% 100%;
+  display: flex;
+  flex-wrap: wrap;
+  .item {
+    width: 300px;
+    height: 300px;
+    margin: 10px;
+  }
 }
 </style>

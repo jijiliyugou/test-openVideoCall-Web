@@ -25,7 +25,6 @@ class RMT {
       this.token,
       this.uid
     );
-    console.log("我当前的ID为：", uid);
     // 创建并发布本地音视频轨道
     // 通过麦克风采集的音频创建本地音频轨道对象。
     try {
@@ -54,8 +53,6 @@ class RMT {
       }
       Message.closeAll();
       Message.error(errMsg);
-      // 暂时关闭摄像头采集
-      await this.client.setEnabled(false);
     }
     // 通过摄像头采集的视频创建本地视频轨道对象。
     try {
@@ -84,15 +81,33 @@ class RMT {
       }
       Message.closeAll();
       Message.error(errMsg);
-      // 暂时关闭摄像头采集
-      await this.client.setEnabled(false);
     }
-    console.log(this.localAudioTrack, this.localVideoTrack);
-    // 将这些音视频轨道对象发布到频道中。
-    await this.client.publish([
-      this.localAudioTrack,
-      this.localVideoTrack
-    ]);
+    if (this.localAudioTrack) await this.client.publish(this.localAudioTrack);
+    console.log("我当前的ID为：", uid);
+    if (this.localVideoTrack) {
+      await this.client.publish(this.localVideoTrack);
+      // 自己看自己
+      const myVideoTrack = this.localVideoTrack;
+      // 动态插入一个 DIV 节点作为播放远端视频轨道的容器。
+      // const playerContainer = document.createElement("li");
+      const playerContainer = document.getElementsByClassName("myItem")[0];
+      // 给这个 DIV 节点指定一个 ID，这里指定的是远端用户的 UID。
+      playerContainer.id = uid.toString();
+      // playerContainer.className = "item";
+      // playerContainer.style.width = "300px";
+      // playerContainer.style.height = "300px";
+      // playerContainer.style.margin = "10px";
+      console.log(playerContainer);
+      // document.getElementById("homeBox").appendChild(playerContainer);
+      // document.body.append(playerContainer);
+      // 订阅完成，播放远端音视频。
+      // 传入 DIV 节点，让 SDK 在这个节点下创建相应的播放器播放远端视频。
+      myVideoTrack.play(playerContainer);
+    } else {
+      const myVideoItem = document.getElementsByClassName("myItem")[0];
+      myVideoItem.style.backgroundColor = "#000";
+    }
+    this.subscribeStreamEvents();
   }
 
   /**
@@ -101,6 +116,19 @@ class RMT {
    * @param {*} streamList
    */
   subscribeStreamEvents() {
+    // 开启双流模式
+    this.client
+      .enableDualStream()
+      .then(() => {
+        console.log("开启双流模式成功!");
+      })
+      .catch(err => {
+        console.log(err);
+      });
+    this.client.setRemoteVideoStreamType();
+    this.client.on("connection-state-change", (curState, revState) => {
+      console.log(curState, revState);
+    });
     this.client.on("stream-added", function(evt) {
       let stream = evt.stream;
       let id = stream.getId();
@@ -129,23 +157,20 @@ class RMT {
     // 开始订阅远端用户。
     this.client.on("user-published", async (user, mediaType) => {
       await this.client.subscribe(user, mediaType);
-      console.log("subscribe success");
+      console.log("订阅成功");
       // 表示本次订阅的是视频。
       if (mediaType === "video") {
         // 订阅完成后，从 `user` 中获取远端视频轨道对象。
         const remoteVideoTrack = user.videoTrack;
         // 动态插入一个 DIV 节点作为播放远端视频轨道的容器。
-        const playerContainer = document.createElement("div");
+        const playerContainer = document.createElement("li");
         // 给这个 DIV 节点指定一个 ID，这里指定的是远端用户的 UID。
         playerContainer.id = user.uid.toString();
-        playerContainer.style.width = "640px";
-        playerContainer.style.height = "480px";
-        playerContainer.style.position = "fixed";
-        playerContainer.style.left = "50%";
-        playerContainer.style.top = "50%";
-        playerContainer.style.transform = "translate(-50%, -50%)";
-        console.log(playerContainer);
-        document.getElementById("homeBox").append(playerContainer);
+        playerContainer.className = "item";
+        playerContainer.style.width = "300px";
+        playerContainer.style.height = "300px";
+        playerContainer.style.margin = "10px";
+        document.getElementById("homeBox").appendChild(playerContainer);
         // document.body.append(playerContainer);
         // 订阅完成，播放远端音视频。
         // 传入 DIV 节点，让 SDK 在这个节点下创建相应的播放器播放远端视频。
@@ -156,9 +181,9 @@ class RMT {
       // 表示本次订阅的是音频。
       if (mediaType === "audio") {
         // 订阅完成后，从 `user` 中获取远端音频轨道对象。
-        const remoteAudioTrack = user.audioTrack;
+        const audioTrack = user.audioTrack;
         // 播放音频因为不会有画面，不需要提供 DOM 元素的信息。
-        remoteAudioTrack.play();
+        audioTrack.play();
       }
     });
     this.client.on("user-unpublished", (user, mediaType) => {
